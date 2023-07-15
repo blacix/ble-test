@@ -7,6 +7,7 @@ import random
 from bluezero import async_tools
 from bluezero import adapter
 from bluezero import peripheral
+from bluezero import device
 
 # constants
 # Custom service uuid
@@ -94,6 +95,32 @@ def main(adapter_address):
     cpu_monitor.publish()
 
 
+def stuff(device: device.Device):
+    print(device.address)
+    print(device.name)
+
 if __name__ == '__main__':
-    # Get the default adapter address and pass it to main
-    main(list(adapter.Adapter.available())[0].address)
+    # # Get the default adapter address and pass it to main
+    # main(list(adapter.Adapter.available())[0].address)
+    
+    dongles = adapter.list_adapters()
+    print('dongles available: ', dongles)
+    dongle = adapter.Adapter(dongles[0])
+
+    print('address: ', dongle.address)
+    print('name: ', dongle.name)
+    print('alias: ', dongle.alias)
+    print('powered: ', dongle.powered)
+    print('pairable: ', dongle.pairable)
+    print('pairable timeout: ', dongle.pairabletimeout)
+    print('discoverable: ', dongle.discoverable)
+    print('discoverable timeout: ', dongle.discoverabletimeout)
+    print('discovering: ', dongle.discovering)
+    print('Powered: ', dongle.powered)
+    if not dongle.powered:
+        dongle.powered = True
+        print('Now powered: ', dongle.powered)
+    print('Start discovering')
+    dongle.on_device_found = stuff
+    dongle.nearby_discovery()
+    # dongle.powered = False
