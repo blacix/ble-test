@@ -16,7 +16,7 @@ import dbus.exceptions
 # Control Box UART RX UUID/Characteristic: 00001525-1212-EFDE-1523-785FEABCD123
 # Control Box UART TX UUID/Characteristic: 00001524-1212-EFDE-1523-785FEABCD123
 
-BLE_MAC_ADDRESS = "88:88:88:88"
+BLE_MAC_ADDRESS = "F5:C9:07:2D:EA:5C"
 
 class BleCentral(Thread):
     CTRL_UART_SERVICE_UUID = 'b3e668c0-cf93-11ec-9d64-0242ac120002'
@@ -29,10 +29,7 @@ class BleCentral(Thread):
     def __init__(self, device_addr, adapter_addr=None, **kwargs):
         super().__init__()
         self.phoneRxQueue = Queue()
-        self.ctrlRxQueue = Queue()
-        dongle = adapter.Adapter(adapter_addr)
-        dongle.on_device_found = 
-        dongle.start_discovery()
+
         self.bleCentral = central.Central(adapter_addr=adapter_addr, device_addr=device_addr)
 
         self._CtrlTxChar = self.bleCentral.add_characteristic(self.CTRL_UART_SERVICE_UUID,
