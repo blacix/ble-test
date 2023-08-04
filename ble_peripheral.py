@@ -2,6 +2,8 @@
 # Standard modules
 import logging
 import random
+from threading import Thread
+import time
 
 # Bluezero modules
 from bluezero import async_tools
@@ -32,9 +34,21 @@ def read_value():
 
     :return: list of uint8 values
     """
+
+    print('read_value callback')
     cpu_value = random.randrange(3200, 5310, 10) / 100
     return list(int(cpu_value * 100).to_bytes(2,
                                               byteorder='little', signed=True))
+
+
+def write_callback(value: [int], options):
+    print('write_callback')
+
+def on_connect(local_address:device.Device=None, remote_address=None):
+    print('on_connect', local_address.address, remote_address)
+
+def on_disconnect(local_address=None, remote_address=None):
+    print('on_disconnect', local_address, remote_address)
 
 
 def update_value(characteristic):
@@ -63,6 +77,7 @@ def notify_callback(notifying, characteristic):
     """
     if notifying:
         async_tools.add_timer_seconds(2, update_value, characteristic)
+    print('notify_callback')
 
 
 def main(adapter_address):
@@ -76,21 +91,23 @@ def main(adapter_address):
     cpu_monitor = peripheral.Peripheral(adapter_address,
                                         local_name='CPU Monitor',
                                         appearance=1344)
+    cpu_monitor.on_connect = on_connect
+    cpu_monitor.on_disconnect = on_disconnect
     # Add service
     cpu_monitor.add_service(srv_id=1, uuid=CPU_TMP_SRVC, primary=True)
     # Add characteristic
     cpu_monitor.add_characteristic(srv_id=1, chr_id=1, uuid=CPU_TMP_CHRC,
-                                   value=[], notifying=False,
-                                   flags=['read', 'notify'],
+                                   value=[], notifying=True,
+                                   flags=['write-without-response', 'notify'],
                                    read_callback=read_value,
-                                   write_callback=None,
-                                   notify_callback=notify_callback
+                                   write_callback=write_callback,
+                                   notify_callback=notify_callback,
                                    )
     # Add descriptor
     cpu_monitor.add_descriptor(srv_id=1, chr_id=1, dsc_id=1, uuid=CPU_FMT_DSCP,
                                value=[0x0E, 0xFE, 0x2F, 0x27, 0x01, 0x00,
                                       0x00],
-                               flags=['read'])
+                               flags=['read','write'])
     # Publish peripheral and start event loop
     cpu_monitor.publish()
 
@@ -120,7 +137,9 @@ if __name__ == '__main__':
     if not dongle.powered:
         dongle.powered = True
         print('Now powered: ', dongle.powered)
-    print('Start discovering')
-    dongle.on_device_found = stuff
-    dongle.nearby_discovery()
+    # print('Start discovering')
+    # dongle.on_device_found = stuff
+    # dongle.nearby_discovery()
     # dongle.powered = False
+
+    main('84:7B:57:F6:AD:A0')
