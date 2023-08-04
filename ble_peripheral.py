@@ -14,12 +14,16 @@ from bluezero import localGATT
 
 # constants
 # Custom service uuid
-CPU_TMP_SRVC = '12341000-1234-1234-1234-123456789abc'
+CPU_TMP_SRVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
 # https://www.bluetooth.com/specifications/assigned-numbers/
 # Bluetooth SIG adopted UUID for Temperature characteristic
-CPU_TMP_CHRC = '2A6E'
-# Bluetooth SIG adopted UUID for Characteristic Presentation Format
-CPU_FMT_DSCP = '2904'
+CPU_TMP_CHRC = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'.lower()
+
+UART_SERVICE = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E'
+RX_CHARACTERISTIC = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
+TX_CHARACTERISTIC = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
+
+
 
 
 def read_value():
@@ -46,7 +50,7 @@ def write_callback(value: [int], options):
     print('write_callback')
 
 def on_connect(local_address:device.Device=None, remote_address=None):
-    print('on_connect', local_address.address, remote_address)
+    print('on_connect', local_address, remote_address)
 
 def on_disconnect(local_address=None, remote_address=None):
     print('on_disconnect', local_address, remote_address)
@@ -90,28 +94,47 @@ def main(adapter_address):
     print('CPU temperature is {}\u00B0C'.format(
         int.from_bytes(read_value(), byteorder='little', signed=True)/100))
     # Create peripheral
-    cpu_monitor = peripheral.Peripheral(adapter_address,
-                                        local_name='CPU Monitor',
-                                        appearance=1344)
+    cpu_monitor = peripheral.Peripheral(adapter_address, local_name='test device')
     cpu_monitor.on_connect = on_connect
     cpu_monitor.on_disconnect = on_disconnect
     # Add service
-    cpu_monitor.add_service(srv_id=1, uuid=CPU_TMP_SRVC, primary=True)
+    cpu_monitor.add_service(srv_id=1, uuid=UART_SERVICE, primary=True)
     # Add characteristic
-    cpu_monitor.add_characteristic(srv_id=1, chr_id=1, uuid=CPU_TMP_CHRC,
-                                   value=[], notifying=True,
-                                   flags=['write-without-response', 'notify'],
-                                   read_callback=read_value,
-                                   write_callback=write_callback,
-                                   notify_callback=notify_callback,
-                                   )
+    # cpu_monitor.add_characteristic(srv_id=1, chr_id=1, uuid=CPU_TMP_CHRC,
+    #                                value=[], notifying=True,
+    #                                flags=['write-without-response', 'notify'],
+    #                                read_callback=read_value,
+    #                                write_callback=write_callback,
+    #                                notify_callback=notify_callback,
+    #                                )
+
+    cpu_monitor.add_characteristic(srv_id=1, chr_id=1, uuid=RX_CHARACTERISTIC,
+                                value=[], notifying=False,
+                                flags=['notify','write', 'write-without-response'],
+                                write_callback=write_callback,
+                                read_callback=read_value,
+                                notify_callback=notify_callback)
+    
+    # cpu_monitor.add_descriptor(srv_id=1, chr_id=1, dsc_id=1, uuid=RX_CHARACTERISTIC,
+    #                            value=[0x0E, 0xFE, 0x2F, 0x27, 0x01, 0x00,
+    #                                   0x00],
+    #                            flags=['notify','write', 'write-without-response'])
+    
+    cpu_monitor.add_characteristic(srv_id=1, chr_id=2, uuid=TX_CHARACTERISTIC,
+                                value=[], notifying=True,
+                                flags=['notify'],
+                                notify_callback=notify_callback,
+                                read_callback=read_value,
+                                write_callback=write_callback)
+    
     # Add descriptor
-    cpu_monitor.add_descriptor(srv_id=1, chr_id=1, dsc_id=1, uuid=CPU_FMT_DSCP,
-                               value=[0x0E, 0xFE, 0x2F, 0x27, 0x01, 0x00,
-                                      0x00],
-                               flags=['read','write'])
-    # Publish peripheral and start event loop
+    # cpu_monitor.add_descriptor(srv_id=1, chr_id=2, dsc_id=2, uuid=TX_CHARACTERISTIC,
+    #                            value=[0x0E, 0xFE, 0x2F, 0x27, 0x01, 0x00,
+    #                                   0x00],
+    #                            flags=['read', 'write'])
     cpu_monitor.publish()
+
+    
 
 
 def stuff(device: device.Device):
