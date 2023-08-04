@@ -10,6 +10,7 @@ from bluezero import async_tools
 from bluezero import adapter
 from bluezero import peripheral
 from bluezero import device
+from bluezero import localGATT
 
 # constants
 # Custom service uuid
@@ -67,17 +68,18 @@ def update_value(characteristic):
     return characteristic.is_notifying
 
 
-def notify_callback(notifying, characteristic):
+def notify_callback(notifying, characteristic: localGATT.Characteristic):
     """
     Noitificaton callback example. In this case used to start a timer event
-    which calls the update callback ever 2 seconds
+    which calls the update callback ever 1 seconds
 
     :param notifying: boolean for start or stop of notifications
     :param characteristic: The python object for this characteristic
     """
+    print('notify_callback', notifying)
     if notifying:
-        async_tools.add_timer_seconds(2, update_value, characteristic)
-    print('notify_callback')
+        async_tools.add_timer_seconds(1, update_value, characteristic)
+    
 
 
 def main(adapter_address):
