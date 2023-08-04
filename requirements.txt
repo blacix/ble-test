@@ -1,0 +1,6 @@
+asynctools==0.1.3
+bluezero==0.7.1
+dbus-python==1.3.2
+pkg-resources==0.0.0
+pycairo==1.23.0
+PyGObject==3.44.1
