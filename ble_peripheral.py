@@ -24,7 +24,6 @@ class PeripheralTest:
         self.test_device_peripheral: peripheral.Peripheral = None
         self.rx_characteristic: localGATT.Characteristic = None
         self.tx_characteristic: localGATT.Characteristic = None
-        self.counter = 100
         self.rx_value: int = 0
     
     def tx_read_value(self):
@@ -53,9 +52,9 @@ class PeripheralTest:
         :return: boolean to indicate if timer should continue
         """
         # Causes characteristic to be updated and send notification
-        self.counter = self.counter + 1
-        self.tx_buffer = self.counter.to_bytes(4, byteorder='big')
-        print('update_tx_value', self.counter)
+        self.rx_value = self.rx_value + 1
+        self.tx_buffer = self.rx_value.to_bytes(4, byteorder='big')
+        print('update_tx_value', self.rx_value)
         characteristic.set_value(self.tx_buffer)
         # Return True to continue notifying. Return a False will stop notifications
         # Getting the value from the characteristic of if it is notifying
