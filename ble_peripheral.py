@@ -36,7 +36,7 @@ class PeripheralTest:
     def rx_write_callback(self, value: [int], options):
         self.rx_buffer = value
         print('rx_write_callback', self.rx_buffer[0])
-        self.update_value(self.tx_characteristic)
+        self.update_tx_value(self.tx_characteristic)
 
     def on_connect(self, local_address:device.Device=None, remote_address=None):
         print('on_connect', local_address, remote_address)
@@ -44,7 +44,7 @@ class PeripheralTest:
     def on_disconnect(self, local_address=None, remote_address=None):
         print('on_disconnect', local_address, remote_address)
 
-    def update_value(self, characteristic: localGATT.Characteristic):
+    def update_tx_value(self, characteristic: localGATT.Characteristic):
         """
         callback to send notifications
         :param characteristic:
@@ -53,7 +53,7 @@ class PeripheralTest:
         # Causes characteristic to be updated and send notification
         self.counter = self.counter + 1
         self.tx_buffer[0] = self.counter
-        print('update_value', self.tx_buffer[0])
+        print('update_tx_value', self.tx_buffer[0])
         characteristic.set_value(self.tx_buffer)
         # Return True to continue notifying. Return a False will stop notifications
         # Getting the value from the characteristic of if it is notifying
@@ -66,7 +66,7 @@ class PeripheralTest:
         """
         print('tx_notify_callback', notifying)
         if notifying:
-            self.update_value(characteristic)
+            self.update_tx_value(characteristic)
             # async_tools.add_timer_seconds(1, self.update_value, characteristic)
         
 
