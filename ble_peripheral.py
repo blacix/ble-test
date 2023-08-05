@@ -25,6 +25,7 @@ class PeripheralTest:
         self.rx_characteristic: localGATT.Characteristic = None
         self.tx_characteristic: localGATT.Characteristic = None
         self.counter = 100
+        self.rx_value: int = 0
     
     def tx_read_value(self):
         """
@@ -33,9 +34,10 @@ class PeripheralTest:
         print('tx_read_value callback')
         return self.tx_buffer
 
-    def rx_write_callback(self, value: [int], options):
+    def rx_write_callback(self, value: [], options):
         self.rx_buffer = value
-        print('rx_write_callback', self.rx_buffer[0])
+        self.rx_value = int.from_bytes(self.rx_buffer, byteorder='big')
+        print('rx_write_callback', self.rx_value)
         self.update_tx_value(self.tx_characteristic)
 
     def on_connect(self, local_address:device.Device=None, remote_address=None):
@@ -52,8 +54,8 @@ class PeripheralTest:
         """
         # Causes characteristic to be updated and send notification
         self.counter = self.counter + 1
-        self.tx_buffer[0] = self.counter
-        print('update_tx_value', self.tx_buffer[0])
+        self.tx_buffer = self.counter.to_bytes(4, byteorder='big')
+        print('update_tx_value', self.counter)
         characteristic.set_value(self.tx_buffer)
         # Return True to continue notifying. Return a False will stop notifications
         # Getting the value from the characteristic of if it is notifying
