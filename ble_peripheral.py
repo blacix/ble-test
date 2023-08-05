@@ -16,16 +16,24 @@ from bluezero import localGATT
 UART_SERVICE = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E'
 RX_CHARACTERISTIC = '6E400002-B5A3-F393-E0A9-E50E24DCCA9E'
 TX_CHARACTERISTIC = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E'
+TEST_MESSAGE_SIZE = 2048
+
 
 class PeripheralTest:
     def __init__(self) -> None:
-        self.rx_buffer = [0]
-        self.tx_buffer = [0]
+        self.rx_buffer = []
+        self.tx_buffer = []
         self.test_device_peripheral: peripheral.Peripheral = None
         self.rx_characteristic: localGATT.Characteristic = None
         self.tx_characteristic: localGATT.Characteristic = None
         self.rx_value: int = 0
-    
+        self.MTU = 20
+        self.tx_str = ""
+        for i in range(0, TEST_MESSAGE_SIZE - 1):
+            self.tx_str += str(i % 10)
+        self.tx_str += '\n'
+        print(self.tx_str)
+
     def tx_read_value(self):
         """
         :return: list of uint8 values
@@ -34,12 +42,15 @@ class PeripheralTest:
         return self.tx_buffer
 
     def rx_write_callback(self, value: [], options):
+        print('rx_write_callback, options: ', options)
+        self.MTU = options['mtu'] - 5
+        print('MTU: ', self.MTU)
         self.rx_buffer = value
         self.rx_value = int.from_bytes(self.rx_buffer, byteorder='big')
         print('rx_write_callback', self.rx_value)
         self.update_tx_value(self.tx_characteristic)
 
-    def on_connect(self, local_address:device.Device=None, remote_address=None):
+    def on_connect(self, local_address: device.Device = None, remote_address=None):
         print('on_connect', local_address, remote_address)
 
     def on_disconnect(self, local_address=None, remote_address=None):
@@ -52,14 +63,25 @@ class PeripheralTest:
         :return: boolean to indicate if timer should continue
         """
         # Causes characteristic to be updated and send notification
+        print('update_tx_value')
         self.rx_value = self.rx_value + 1
         self.tx_buffer = self.rx_value.to_bytes(4, byteorder='big')
-        print('update_tx_value', self.rx_value)
-        characteristic.set_value(self.tx_buffer)
+        self.tx_buffer = bytearray(self.tx_str, 'utf-8')
+        offset = 0
+        tx_buffer_len = len(self.tx_buffer)
+        while offset < tx_buffer_len:
+            out = self.tx_buffer[offset:offset + self.MTU]
+            print('chunk', out)
+            characteristic.set_value(out)
+            offset += self.MTU
+        if offset < tx_buffer_len:
+            out = self.tx_buffer[offset:]
+            print('chunk', out)
+            characteristic.set_value(out)
+
         # Return True to continue notifying. Return a False will stop notifications
         # Getting the value from the characteristic of if it is notifying
         return characteristic.is_notifying
-
 
     def tx_notify_callback(self, notifying, characteristic: localGATT.Characteristic):
         """
@@ -67,9 +89,9 @@ class PeripheralTest:
         """
         print('tx_notify_callback', notifying)
         if notifying:
-            self.update_tx_value(characteristic)
+            pass
+            # self.update_tx_value(characteristic)
             # async_tools.add_timer_seconds(1, self.update_value, characteristic)
-        
 
     def main(self, adapter_address):
         """Creation of peripheral"""
@@ -84,33 +106,33 @@ class PeripheralTest:
         self.test_device_peripheral.add_service(srv_id=1, uuid=UART_SERVICE, primary=True)
         # Add characteristic
         self.rx_characteristic = localGATT.Characteristic(service_id=1, characteristic_id=1, uuid=RX_CHARACTERISTIC,
-                                    value=[], notifying=False,
-                                    flags=['write-without-response'],
-                                    write_callback=self.rx_write_callback,
-                                    read_callback=None,
-                                    notify_callback=None)
+                                                          value=[], notifying=False,
+                                                          flags=['write'],
+                                                          write_callback=self.rx_write_callback,
+                                                          read_callback=None,
+                                                          notify_callback=None)
         self.test_device_peripheral.characteristics.append(self.rx_characteristic)
 
         self.tx_characteristic = localGATT.Characteristic(service_id=1, characteristic_id=2, uuid=TX_CHARACTERISTIC,
-                                    value=[], notifying=False,
-                                    flags=['notify'],
-                                    write_callback=None,
-                                    read_callback=self.tx_read_value,
-                                    notify_callback=self.tx_notify_callback)
+                                                          value=[], notifying=False,
+                                                          flags=['read', 'indicate'],
+                                                          write_callback=None,
+                                                          read_callback=self.tx_read_value,
+                                                          notify_callback=self.tx_notify_callback)
         self.test_device_peripheral.characteristics.append(self.tx_characteristic)
 
         self.test_device_peripheral.publish()
 
-        
     @staticmethod
     def print_device(device: device.Device):
         print(device.address)
         print(device.name)
 
+
 if __name__ == '__main__':
     # # Get the default adapter address and pass it to main
     # main(list(adapter.Adapter.available())[0].address)
-    
+
     dongles = adapter.list_adapters()
     print('dongles available: ', dongles)
     dongle = adapter.Adapter(dongles[0])
