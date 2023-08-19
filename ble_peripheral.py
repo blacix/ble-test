@@ -42,7 +42,7 @@ class PeripheralTest:
         return self.tx_buffer
 
     def rx_write_callback(self, value: [], options):
-        print('rx_write_callback, options: ', options, 'value', value)
+        print('rx_write_callback, options: ', options, 'size', len(value), 'value', value)
         # minus ATT header and l2cap header
         self.MTU = options['mtu'] - 2 - 3
         print('MTU: ', self.MTU)
