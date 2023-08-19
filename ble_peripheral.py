@@ -65,7 +65,7 @@ class PeripheralTest:
 
     def update_tx_value(self, characteristic: localGATT.Characteristic, message: str):
         # Causes characteristic to be updated and send notification
-        print('update_tx_value')
+        print(f'update_tx_value: {message}')
         self.tx_buffer = bytearray(message, 'utf-8')
         offset = 0
         tx_buffer_len = len(self.tx_buffer)
